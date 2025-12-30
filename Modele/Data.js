@@ -43,7 +43,7 @@ const clients = [
 ];
 
 
- 
+  
 
  
   function findUser(login, password) {
@@ -51,4 +51,8 @@ const clients = [
     return user;
 }
 
-export{findUser};
+  function findLogin(login) {
+    let user= clients.find((u) =>u.nom === login) ;
+    return user;
+}
+export{findUser,findLogin}

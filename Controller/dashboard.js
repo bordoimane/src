@@ -1,12 +1,11 @@
+import { findLogin } from "../Modele/Data.js";
+  
 
-export { findUser } from "../Modele/Data.js";
-
-
-let user = JSON.parse(localStorage.getItem("user"));
-/*user.operations = user.operations.filter(op => op.description !== "Transfert vers eimnae@gmail.com");
-localStorage.setItem("user", JSON.stringify(user));*///pour supprimer les type=debit
+let user = JSON.parse(sessionStorage.getItem("currentUser"));
+ /*user.operations = user.operations.filter(op => op.type !=="dépôt");
+localStorage.setItem("user", JSON.stringify(user));//pour supprimer les type=debit*/
 function sauvegarder() {
-  localStorage.setItem("user", JSON.stringify(user));
+  localStorage.setItem("currentUser", JSON.stringify(user));
 }
 
 const welcomeMessage = document.getElementById("welcome_message");
@@ -15,8 +14,8 @@ const transactions = document.getElementById("transactions");
 const filter = document.getElementById("type");
 
   
- welcomeMessage.textContent = "Bonjour " + user.name;
-solde.textContent = user.solde + " DH";
+ welcomeMessage.textContent = "Bonjour "+user.name;
+ solde.textContent = user.solde + " DH";
 
  function afficherTransactions(liste) {
   transactions.innerHTML = "";
@@ -75,11 +74,218 @@ function handleChange() {
 const btnTransferer = document.getElementById("transferer");
 const btnRecharger = document.getElementById("recharger");
 const btnPayer = document.getElementById("payer");
+  
+
+
+btnPayer.addEventListener("click", () => {
+  function handleUser() {
+  return new Promise((resolve, reject) => {
+    if (!user) {
+      reject("Aucun utilisateur trouvé");
+      return;
+    }
+    resolve(user);
+  });
+}
+  handleUser()
+    .then(user => {
+      return new Promise((resolve, reject) => {
+        const montant = Number(prompt("Entrer le montant à payer :"));
+        if (isNaN(montant) || montant <= 0) {
+          reject("Montant invalide !");
+        } else if (montant > user.solde) {
+          reject("Solde insuffisant !");
+        } else {
+          resolve(montant);
+        }
+      });
+    })
+    .then(montant => {
+       user.solde -= montant;
+      solde.textContent = user.solde + " DH";
+
+       const today = new Date().toLocaleDateString("fr-FR");
+      user.operations.unshift({
+        date: today,
+        description: "Paiement",
+        type: "retrait",
+        montant: montant
+      });
  
+       afficherTransactions(user.operations);
+       sauvegarder();
+
+      alert("Paiement effectué avec succès !");
+    })
+    .catch(erreur => alert(erreur));
+});
+
+btnRecharger.addEventListener("click",
+()=>{function handlRecharger()
+{
+  return new Promise((resolve,reject)=>
+  {
+    if(user)
+    {
+      resolve(user);
+    }
+    else
+    {
+      reject("user n'existe pas");
+    }
+  }
+);
+}
+handlRecharger()
+.then(user=>{return new Promise((resolve,reject)=>
+  {
+     const montant=Number(prompt("entrer le montant a recharger:"));
+    if(montant>0&&!isNaN(montant))
+    {
+      resolve(montant);
+    }
+    else
+    {
+      reject("le montant invalide");
+    }
+  });})
+  .then(montant=>{
+    user.solde+=montant;
+      solde.textContent=user.solde;
+      alert("l operations est bien faite!");
+      const today = new Date().toLocaleDateString("fr-FR");
+    user.operations.unshift({
+      date: today,
+      description: "recharger",
+      type: "dépôt",
+      montant: montant
+    });
+    sauvegarder();
+ afficherTransactions(user.operations);
+    })
+
+.catch(msg=>alert(msg));
+}
+);
+
+ btnTransferer.addEventListener("click",()=>
+{
+  function handlTransferer()
+  {
+     const destinataire = prompt("Nom du destinataire :");
+     let destinatair=findLogin(destinataire);
+      return new Promise((resolve,reject)=>
+    {if(destinatair)
+    {
+       resolve(destinatair);
+    }
+    else
+    {
+      reject("le destinataire introuvalble!!!");
+    }
+    }
+    );
+  }
+  handlTransferer()
+  .then(destinatair=>{
+    return new Promise((resolve,reject)=>{
+     const montant=Number(prompt("entrer le montant a recharger:"));
+    if(montant>0&&!isNaN(montant))
+    {
+      resolve({montant,destinatair});
+    }
+    else
+    {
+      reject("le montant invalide");
+    }
+  });})
+  .then(data=>{
+     const {montant,destinatair}=data;
+      destinatair.solde+=montant;
+       user.solde-=montant;
+      solde.textContent=user.solde;
+      alert("l operations est bien faite!");
+      const today = new Date().toLocaleDateString("fr-FR");
+    user.operations.unshift({
+      date: today,
+      description: "transferer",
+      type: "retrait",
+      montant: montant
+    });
+    sauvegarder();
+     afficherTransactions(user.operations);
+ 
+    })
+  
+  .catch(msg=>alert(msg));
+  
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ /*
 btnPayer.addEventListener("click",()=>
 {
   const montant=Number(prompt("entrer le montant payer:"));
-     if(montant<user.solde ||montant==="")
+     if(0<montant<user.solde ||montant!==""||montant>0)
     {
       user.solde-=montant;
       solde.textContent=user.solde;
@@ -88,11 +294,12 @@ btnPayer.addEventListener("click",()=>
     user.operations.unshift({
       date: today,
       description: "Paiement",
-      type: "dépôt",
+      type: "retrait",
       montant: montant
     });
     sauvegarder();
  afficherTransactions(user.operations);
+ return;
   }
     else{
       alert("le montant insuffisant !!!");
@@ -156,6 +363,4 @@ btnTransferer.addEventListener("click", function () {
   else {
     alert("Erreur dans les informations !");
   }
-});
-
- 
+});*/
